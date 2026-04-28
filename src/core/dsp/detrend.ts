@@ -47,7 +47,7 @@ export function detrend(x: Float32Array, lambda = 100): Float32Array {
       L1[i] = v / d;
     }
     if (i + 2 < N) {
-      let v = a2[i];
+      const v = a2[i];
       L2[i] = v / d;
     }
   }

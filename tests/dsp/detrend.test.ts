@@ -12,7 +12,8 @@ describe('detrend (smoothness-prior)', () => {
     mean /= N;
     expect(Math.abs(mean)).toBeLessThan(0.1);
     // residual slope (least squares) should be near zero
-    let sxy = 0, sxx = 0, mx = (N - 1) / 2;
+    let sxy = 0, sxx = 0;
+    const mx = (N - 1) / 2;
     for (let i = 0; i < N; i++) { sxy += (i - mx) * y[i]; sxx += (i - mx) ** 2; }
     const slope = sxy / sxx;
     expect(Math.abs(slope)).toBeLessThan(0.005);
