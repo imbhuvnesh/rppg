@@ -78,6 +78,11 @@ export class FaceRoiTracker {
     })) as unknown as FaceLandmarkerLike;
   }
 
+  /** Last detected ROI (or last cached one within the reuse window), if any. */
+  getLastRoi(): Roi | null {
+    return this.lastRoi;
+  }
+
   /** Detect face in current video frame; returns ROI or null. */
   detect(video: HTMLVideoElement): Roi | null {
     if (!this.landmarker) return null;

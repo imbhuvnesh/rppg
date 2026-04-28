@@ -1,6 +1,6 @@
 import { pipeline } from '../core/pipeline';
 import type { MethodName, RppgResult, RgbSample, RgbTrace } from '../core/types';
-import { FaceRoiTracker } from './face-roi';
+import { FaceRoiTracker, type Roi } from './face-roi';
 import { FrameCapture } from './frame-capture';
 
 export type LiveRppgOpts = {
@@ -81,6 +81,11 @@ export class LiveRppg {
   /** Last known result, or null if not yet computed. */
   latest(): RppgResult | null {
     return this.lastResult;
+  }
+
+  /** Last detected ROI from the tracker, or null if none yet. */
+  getRoi(): Roi | null {
+    return this.tracker.getLastRoi();
   }
 
   private tickPipeline(): void {
