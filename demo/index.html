@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>rPPG-TS Demo</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <section class="video-pane">
+        <div class="video-wrap">
+          <video id="video" playsinline muted autoplay></video>
+          <canvas id="overlay"></canvas>
+          <div id="status" class="status"></div>
+        </div>
+        <div class="controls">
+          <label for="method">Method</label>
+          <select id="method">
+            <option value="pos" selected>POS</option>
+            <option value="chrom">CHROM</option>
+            <option value="green">GREEN</option>
+            <option value="ica">ICA</option>
+            <option value="pbv">PBV</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="readout">
+        <div class="bpm-wrap">
+          <div id="bpm" class="bpm">--</div>
+          <div class="bpm-unit">BPM</div>
+        </div>
+        <canvas id="wave" width="640" height="160"></canvas>
+        <div class="snr">
+          <div class="snr-label">SNR</div>
+          <div class="snr-track">
+            <div id="snr-bar" class="snr-bar"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
