@@ -325,7 +325,7 @@ git commit -m "feat(dsp): radix-2 FFT with magnitude helper"
 
 ```ts
 import { describe, it, expect } from 'vitest';
-import { butterBandpass, filtfilt } from '../../src/core/dsp/butterworth';
+import { bandpassBiquad, filtfilt } from '../../src/core/dsp/butterworth';
 
 const sine = (f: number, fs: number, N: number) => {
   const x = new Float32Array(N);
@@ -340,7 +340,7 @@ const rms = (x: Float32Array) => {
 describe('butterworth', () => {
   it('passes in-band tones with < 1 dB attenuation', () => {
     const fs = 30, N = 2000;
-    const { b, a } = butterBandpass(2, 0.7, 4, fs);
+    const { b, a } = bandpassBiquad(2, 0.7, 4, fs);
     const x = sine(1.5, fs, N);
     const y = filtfilt(b, a, x);
     // skip transients
@@ -351,7 +351,7 @@ describe('butterworth', () => {
 
   it('rejects out-of-band tones by >= 30 dB', () => {
     const fs = 30, N = 4000;
-    const { b, a } = butterBandpass(2, 0.7, 4, fs);
+    const { b, a } = bandpassBiquad(2, 0.7, 4, fs);
     const x = sine(10, fs, N);
     const y = filtfilt(b, a, x);
     const ratio = rms(y.subarray(400, N - 400)) / rms(x.subarray(400, N - 400));
@@ -361,7 +361,7 @@ describe('butterworth', () => {
 
   it('filtfilt is zero-phase: peak position unchanged for an impulse', () => {
     const fs = 30, N = 1024;
-    const { b, a } = butterBandpass(2, 0.7, 4, fs);
+    const { b, a } = bandpassBiquad(2, 0.7, 4, fs);
     const x = new Float32Array(N);
     x[N / 2] = 1; // impulse at center
     const y = filtfilt(b, a, x);
@@ -389,7 +389,7 @@ export type IIR = { b: Float64Array; a: Float64Array };
 // Implementation: design analog prototype, frequency-transform to bandpass, bilinear -> digital.
 // For simplicity here we implement orders 1 and 2 via the cookbook biquad bandpass with center
 // frequency f0 = sqrt(low*high) and Q = f0 / (high - low), cascaded for order 2.
-export function butterBandpass(order: 1 | 2, lowHz: number, highHz: number, fs: number): IIR {
+export function bandpassBiquad(order: 1 | 2, lowHz: number, highHz: number, fs: number): IIR {
   const f0 = Math.sqrt(lowHz * highHz);
   const Q = f0 / (highHz - lowHz);
   const w0 = 2 * Math.PI * f0 / fs;
@@ -1065,7 +1065,7 @@ import { describe, it, expect } from 'vitest';
 import { green } from '../../src/core/methods/green';
 import { syntheticTrace } from '../helpers/synthetic';
 import { estimateHr } from '../../src/core/hr/estimate';
-import { filtfilt, butterBandpass } from '../../src/core/dsp/butterworth';
+import { filtfilt, bandpassBiquad } from '../../src/core/dsp/butterworth';
 import { detrend } from '../../src/core/dsp/detrend';
 
 describe('GREEN', () => {
@@ -1074,7 +1074,7 @@ describe('GREEN', () => {
       const trace = syntheticTrace({ bpm, fps, durationSec: 15, snrDb: 10 });
       let pulse = green(trace);
       pulse = detrend(pulse, 100);
-      const { b, a } = butterBandpass(2, 0.7, 4, fps);
+      const { b, a } = bandpassBiquad(2, 0.7, 4, fps);
       pulse = filtfilt(b, a, pulse);
       const r = estimateHr(pulse, fps);
       expect(Math.abs(r.bpm - bpm)).toBeLessThan(2);
@@ -1116,7 +1116,7 @@ Same test structure, replacing `green` with `chrom`, and using bandpass `0.7-2.5
 
 Implement with: window `W = ceil(1.6 * fps)`, 50% overlap, Hann; per window normalize by mean, compute Xs and Ys, internal bandpass on each, alpha = std(Xs)/std(Ys), pulse window = Xs - alpha*Ys, Hann-window, overlap-add into output.
 
-For the per-window internal bandpass we reuse `butterBandpass(2, 0.7, 2.5, fps)` and `filtfilt`.
+For the per-window internal bandpass we reuse `bandpassBiquad(2, 0.7, 2.5, fps)` and `filtfilt`.
 
 Run, expect 15 PASS. Commit.
 
@@ -1193,7 +1193,7 @@ import { pos } from './methods/pos';
 import { ica } from './methods/ica';
 import { pbv } from './methods/pbv';
 import { detrend } from './dsp/detrend';
-import { butterBandpass, filtfilt } from './dsp/butterworth';
+import { bandpassBiquad, filtfilt } from './dsp/butterworth';
 import { estimateHr } from './hr/estimate';
 
 const METHODS = { green, chrom, pos, ica, pbv } as const;
@@ -1210,7 +1210,7 @@ export function pipeline(trace: RgbTrace, method: MethodName): RppgResult {
   let pulse = METHODS[method](trace);
   pulse = detrend(pulse, 100);
   const [lo, hi, order] = FILTER_BANDS[method];
-  const { b, a } = butterBandpass(order, lo, hi, trace.fps);
+  const { b, a } = bandpassBiquad(order, lo, hi, trace.fps);
   pulse = filtfilt(b, a, pulse);
   const { bpm, snr, confidence } = estimateHr(pulse, trace.fps);
   return { pulseSignal: pulse, bpm, snr, confidence };
