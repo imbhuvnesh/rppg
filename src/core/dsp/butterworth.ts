@@ -1,9 +1,11 @@
 export type IIR = { b: Float64Array; a: Float64Array };
 
-// RBJ-cookbook constant-peak-gain bandpass biquad. For order=2 we cascade the same
-// biquad with itself (sharper biquad, NOT a true 4th-order Butterworth — flatness,
-// group delay and stopband rolloff differ). For HR-band peak detection in rPPG this
-// is adequate; switch to a real Butterworth if you need spec-grade response shape.
+/**
+ * RBJ-cookbook constant-peak-gain bandpass biquad. center frequency
+ * f0 = sqrt(low*high), Q = f0 / (high - low). order=1 is a single biquad;
+ * order=2 cascades the biquad with itself (sharper biquad — not a true
+ * 4th-order Butterworth). Returns IIR coefficients normalized by a0.
+ */
 export function bandpassBiquad(order: 1 | 2, lowHz: number, highHz: number, fs: number): IIR {
   const f0 = Math.sqrt(lowHz * highHz);
   const Q = f0 / (highHz - lowHz);
@@ -33,6 +35,10 @@ function convolve(x: Float64Array, y: Float64Array): Float64Array {
   return out;
 }
 
+/**
+ * Direct-form transposed IIR filter. Returns y same length as x. State is
+ * initialized to zero; expect ~order samples of startup transient.
+ */
 export function lfilter(b: Float64Array, a: Float64Array, x: Float32Array): Float32Array {
   const y = new Float32Array(x.length);
   for (let n = 0; n < x.length; n++) {
@@ -44,6 +50,11 @@ export function lfilter(b: Float64Array, a: Float64Array, x: Float32Array): Floa
   return y;
 }
 
+/**
+ * Zero-phase forward-backward filter. Effective magnitude response is
+ * |H(f)|^2. Pads input with odd reflection at both edges to suppress edge
+ * transients. Returns y same length as x.
+ */
 export function filtfilt(b: Float64Array, a: Float64Array, x: Float32Array): Float32Array {
   // Pad reflection at edges to reduce transient.
   const pad = Math.min(3 * Math.max(b.length, a.length), x.length - 1);

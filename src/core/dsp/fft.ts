@@ -3,7 +3,11 @@ export function nextPow2(n: number): number {
   return 1 << Math.ceil(Math.log2(n));
 }
 
-// Iterative in-place radix-2 FFT. re/im length = N (power of 2). Forward transform.
+/**
+ * In-place radix-2 Cooley-Tukey forward FFT. `re` and `im` must be the same
+ * power-of-2 length. Twiddles are accumulated in float64 internally even
+ * though storage is float32, to limit drift over many stages.
+ */
 export function fftInPlace(re: Float32Array, im: Float32Array): void {
   const N = re.length;
   // bit-reversal permutation
@@ -38,6 +42,12 @@ export function fftInPlace(re: Float32Array, im: Float32Array): void {
   }
 }
 
+/**
+ * Magnitude spectrum of a real signal. Zero-pads to `nextPow2(x.length)`,
+ * so `mag.length === nextPow2(x.length)` and bin k corresponds to frequency
+ * `k * fs / mag.length` (NOT `k * fs / x.length`). Returns full N bins; use
+ * the first N/2 for unique frequencies.
+ */
 export function fftMagnitude(x: Float32Array): Float32Array {
   const N = nextPow2(x.length);
   const re = new Float32Array(N);

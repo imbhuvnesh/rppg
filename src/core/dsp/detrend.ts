@@ -4,6 +4,14 @@
 // (I + lambda^2 D2^T D2) is symmetric pentadiagonal: bands -2,-1,0,1,2.
 // We build the 5 diagonals and run a banded LDL^T solve (no pivoting).
 
+/**
+ * Smoothness-prior detrending (Tarvainen 2002). Subtracts a smooth trend
+ * obtained by solving (I + λ² D₂ᵀ D₂) z = x and returning x - z. Larger λ
+ * means smoother trend (more high-frequency content kept in the residual).
+ * Effective high-pass cutoff: fc ≈ (fs/π)·sqrt((1/(2λ))·(1+sqrt(1+4λ²))).
+ * λ=100 puts the cutoff at ~0.04 cycles/sample, suitable for HR signals at
+ * fs ≥ 15 Hz.
+ */
 export function detrend(x: Float32Array, lambda = 100): Float32Array {
   const N = x.length;
   if (N < 5) return x.slice();
