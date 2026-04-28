@@ -18,8 +18,10 @@ const RIGHT_CHEEK_IDX = [280, 330, 266, 425, 411, 352, 345];
 const DEFAULT_MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
 
+// Keep in sync with @mediapipe/tasks-vision in package.json. The WASM glue
+// and JS API are versioned together, so a mismatch causes runtime failures.
 const DEFAULT_WASM_BASE =
-  'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm';
+  'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm';
 
 const SMOOTH_FRAMES = 5;
 const REUSE_TIMEOUT_MS = 1000;
@@ -65,10 +67,10 @@ export class FaceRoiTracker {
   private lastDetectionMs = 0;
 
   /** Lazy-load MediaPipe and the model. */
-  async init(modelUrl?: string): Promise<void> {
+  async init(modelUrl?: string, wasmBase?: string): Promise<void> {
     if (this.landmarker) return;
     const vision = await import('@mediapipe/tasks-vision');
-    const fileset = await vision.FilesetResolver.forVisionTasks(DEFAULT_WASM_BASE);
+    const fileset = await vision.FilesetResolver.forVisionTasks(wasmBase ?? DEFAULT_WASM_BASE);
     this.landmarker = (await vision.FaceLandmarker.createFromOptions(fileset, {
       baseOptions: { modelAssetPath: modelUrl ?? DEFAULT_MODEL_URL },
       runningMode: 'VIDEO',

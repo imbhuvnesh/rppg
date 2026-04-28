@@ -11,6 +11,8 @@ export type LiveRppgOpts = {
   updateHz?: number;
   /** Override for the FaceLandmarker model URL. */
   modelUrl?: string;
+  /** Override for the MediaPipe WASM base URL (e.g. self-hosted/offline). */
+  wasmBase?: string;
 };
 
 const MIN_CALIBRATION_SEC = 5;
@@ -23,7 +25,10 @@ type ResultListener = (r: RppgResult) => void;
  * a setInterval at `updateHz`, so the math doesn't recompute per frame.
  */
 export class LiveRppg {
-  private readonly opts: Required<Omit<LiveRppgOpts, 'modelUrl'>> & { modelUrl?: string };
+  private readonly opts: Required<Omit<LiveRppgOpts, 'modelUrl' | 'wasmBase'>> & {
+    modelUrl?: string;
+    wasmBase?: string;
+  };
   private tracker = new FaceRoiTracker();
   private capture: FrameCapture;
   private intervalId: ReturnType<typeof setInterval> | null = null;
@@ -37,6 +42,7 @@ export class LiveRppg {
       windowSec: opts.windowSec ?? 10,
       updateHz: opts.updateHz ?? 1,
       modelUrl: opts.modelUrl,
+      wasmBase: opts.wasmBase,
     };
     // Capture buffer needs to comfortably hold the analysis window.
     this.capture = new FrameCapture({
@@ -48,7 +54,7 @@ export class LiveRppg {
   async start(video: HTMLVideoElement): Promise<void> {
     if (this.started) return;
     this.started = true;
-    await this.tracker.init(this.opts.modelUrl);
+    await this.tracker.init(this.opts.modelUrl, this.opts.wasmBase);
     this.capture.start(video, () => this.tracker.detect(video));
     const periodMs = 1000 / this.opts.updateHz;
     this.intervalId = setInterval(() => this.tickPipeline(), periodMs);
