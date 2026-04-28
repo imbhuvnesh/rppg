@@ -18,9 +18,12 @@ import { bandpassBiquad, filtfilt } from '../dsp/butterworth';
  * The Xs/Ys bandpass is applied to the whole-trace Xs/Ys arrays once (before
  * windowing) rather than inside each tiny 1.6 s window. Per-window filtfilt
  * suffers from transient edge effects on a 1.6 s buffer at 60 fps, which
- * destroys low-BPM recovery. Whole-trace bandpass is mathematically equivalent
- * for the linear Xs/Ys formation step and is what rPPG-Toolbox's CHROME_DEHAAN
- * does.
+ * destroys low-BPM recovery.
+ *
+ * Note: per-window `alpha = std(Xw)/std(Yw)` is computed on the
+ * bandpassed Xs/Ys, so it differs slightly from canonical-CHROM `alpha`
+ * (which uses the unfiltered windows). rPPG-Toolbox `CHROME_DEHAAN`
+ * takes the same approach; tests confirm BPM recovery within tolerance.
  *
  * Inner Xs/Ys band: 0.5-2.5 Hz, order 1. The inner filter's job is baseline-
  * drift suppression (drift is typically <0.1 Hz from breathing/lighting/motion),
@@ -57,7 +60,7 @@ export const chrom: RppgMethod = (trace: RgbTrace): Float32Array => {
     Xs[i] = 3 * rn - 2 * gn;
     Ys[i] = 1.5 * rn + gn - 1.5 * bn;
   }
-  // Bandpass Xs and Ys at 0.7-2.5 Hz on the whole trace (zero-phase filtfilt).
+  // Bandpass Xs and Ys at 0.5-2.5 Hz on the whole trace (zero-phase filtfilt).
   const XsF = filtfilt(filt.b, filt.a, Xs);
   const YsF = filtfilt(filt.b, filt.a, Ys);
 
