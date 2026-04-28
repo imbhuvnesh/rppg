@@ -3,9 +3,10 @@ export function mean(x: Float32Array): number {
   let s = 0; for (let i = 0; i < x.length; i++) s += x[i];
   return s / x.length;
 }
-/** Population standard deviation (denominator N). Pass `m` if you've already computed the mean. */
-export function std(x: Float32Array, m = mean(x)): number {
-  let s = 0; for (let i = 0; i < x.length; i++) { const d = x[i] - m; s += d * d; }
+/** Population standard deviation (denominator N). Pass `m` if you've already computed the mean; otherwise it is computed internally. */
+export function std(x: Float32Array, m?: number): number {
+  const mu = m ?? mean(x);
+  let s = 0; for (let i = 0; i < x.length; i++) { const d = x[i] - mu; s += d * d; }
   return Math.sqrt(s / x.length);
 }
 /** Divide by the mean. Returns NaN-filled output if mean is 0. */
