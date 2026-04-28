@@ -2,6 +2,19 @@
 // Observations: array of K Float32Arrays of length N.
 // Returns K independent component signals (Float32Array length N).
 
+/**
+ * Deflationary FastICA with log-cosh nonlinearity (g(u) = tanh u).
+ *
+ * Designed for K=3 RGB rPPG inputs but works for any K (rows = channels, columns = time).
+ * Uses Jacobi-rotation eigendecomposition for whitening (suitable for small K). Random
+ * initialization via `Math.random` — not seedable; expect minor cross-run variation in
+ * the source ordering (sign and permutation are inherently ambiguous in ICA).
+ *
+ * @param obs   Observed mixed signals (length-K array of Float32Arrays, all length N).
+ * @param maxIter  Max FastICA iterations per component (default 200).
+ * @param tol      Convergence tolerance on |⟨w_new, w_old⟩ − 1| (default 1e-5).
+ * @returns Length-K array of Float32Arrays containing the unmixed independent components.
+ */
 export function fastICA(obs: Float32Array[], maxIter = 200, tol = 1e-5): Float32Array[] {
   const K = obs.length;
   const N = obs[0].length;

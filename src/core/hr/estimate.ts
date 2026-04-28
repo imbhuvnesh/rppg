@@ -4,6 +4,19 @@ const HR_LO = 0.7; // ~42 BPM
 const HR_HI = 4.0; // 240 BPM
 const SNR_REF_DB = 5;
 
+/**
+ * Estimate heart rate from a 1-D pulse signal via FFT-peak detection.
+ *
+ * Assumes `pulse` is already detrended and bandpassed to a heart-rate-relevant band.
+ * Internally zero-pads to nextPow2; sub-bin resolution achieved via 3-point parabolic
+ * interpolation around the peak.
+ *
+ * Returns:
+ *   - `bpm`: heart rate in beats per minute (peak frequency × 60).
+ *   - `snr`: signal-to-noise ratio in dB. Numerator = power within ±0.1 Hz of the peak
+ *           and its first harmonic. Denominator = remaining in-band power [0.7, 4.0] Hz.
+ *   - `confidence`: clamp(snr / 5 dB, 0, 1).
+ */
 export function estimateHr(pulse: Float32Array, fps: number) {
   const N = nextPow2(pulse.length);
   // zero-pad implicit in fftMagnitude
