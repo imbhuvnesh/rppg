@@ -1,11 +1,10 @@
 export type IIR = { b: Float64Array; a: Float64Array };
 
-// Order is per low/high side; bandpass = order*2 final order.
-// We support order = 1 (final 2) and order = 2 (final 4).
-// Implementation: design analog prototype, frequency-transform to bandpass, bilinear -> digital.
-// For simplicity here we implement orders 1 and 2 via the cookbook biquad bandpass with center
-// frequency f0 = sqrt(low*high) and Q = f0 / (high - low), cascaded for order 2.
-export function butterBandpass(order: 1 | 2, lowHz: number, highHz: number, fs: number): IIR {
+// RBJ-cookbook constant-peak-gain bandpass biquad. For order=2 we cascade the same
+// biquad with itself (sharper biquad, NOT a true 4th-order Butterworth — flatness,
+// group delay and stopband rolloff differ). For HR-band peak detection in rPPG this
+// is adequate; switch to a real Butterworth if you need spec-grade response shape.
+export function bandpassBiquad(order: 1 | 2, lowHz: number, highHz: number, fs: number): IIR {
   const f0 = Math.sqrt(lowHz * highHz);
   const Q = f0 / (highHz - lowHz);
   const w0 = 2 * Math.PI * f0 / fs;

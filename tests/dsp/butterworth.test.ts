@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { butterBandpass, filtfilt } from '../../src/core/dsp/butterworth';
+import { bandpassBiquad, filtfilt } from '../../src/core/dsp/butterworth';
 
 const sine = (f: number, fs: number, N: number) => {
   const x = new Float32Array(N);
@@ -14,7 +14,7 @@ const rms = (x: Float32Array) => {
 describe('butterworth', () => {
   it('passes in-band tones with < 1 dB attenuation', () => {
     const fs = 30, N = 2000;
-    const { b, a } = butterBandpass(2, 0.7, 4, fs);
+    const { b, a } = bandpassBiquad(2, 0.7, 4, fs);
     const x = sine(1.5, fs, N);
     const y = filtfilt(b, a, x);
     // skip transients
@@ -25,7 +25,7 @@ describe('butterworth', () => {
 
   it('rejects out-of-band tones by >= 30 dB', () => {
     const fs = 30, N = 4000;
-    const { b, a } = butterBandpass(2, 0.7, 4, fs);
+    const { b, a } = bandpassBiquad(2, 0.7, 4, fs);
     const x = sine(10, fs, N);
     const y = filtfilt(b, a, x);
     const ratio = rms(y.subarray(400, N - 400)) / rms(x.subarray(400, N - 400));
@@ -35,7 +35,7 @@ describe('butterworth', () => {
 
   it('filtfilt is zero-phase: peak position unchanged for an impulse', () => {
     const fs = 30, N = 1024;
-    const { b, a } = butterBandpass(2, 0.7, 4, fs);
+    const { b, a } = bandpassBiquad(2, 0.7, 4, fs);
     const x = new Float32Array(N);
     x[N / 2] = 1; // impulse at center
     const y = filtfilt(b, a, x);
