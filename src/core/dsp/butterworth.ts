@@ -56,6 +56,7 @@ export function lfilter(b: Float64Array, a: Float64Array, x: Float32Array): Floa
  * transients. Returns y same length as x.
  */
 export function filtfilt(b: Float64Array, a: Float64Array, x: Float32Array): Float32Array {
+  if (x.length === 0) return new Float32Array(0);
   // Pad reflection at edges to reduce transient.
   const pad = Math.min(3 * Math.max(b.length, a.length), x.length - 1);
   const N = x.length;
