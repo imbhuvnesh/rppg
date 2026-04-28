@@ -23,4 +23,19 @@ describe('PBV', () => {
       expect(Math.abs(recovered - bpm)).toBeLessThan(2);
     });
   }
+
+  it('returns NaN-filled signal on singular C·C^T', () => {
+    const N = 300;
+    const trace = {
+      r: new Float32Array(N).fill(0.5),
+      g: new Float32Array(N).fill(0.5),
+      b: new Float32Array(N).fill(0.5),
+      fps: 30,
+    };
+    const out = pbv(trace);
+    expect(out.length).toBe(N);
+    let allNaN = true;
+    for (let i = 0; i < N; i++) if (!Number.isNaN(out[i])) { allNaN = false; break; }
+    expect(allNaN).toBe(true);
+  });
 });

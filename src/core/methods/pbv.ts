@@ -24,6 +24,10 @@ export type PbvOptions = {
  * 5. Compute Q = C * C^T (3x3).
  * 6. Solve W = Q^-1 * pbv (closed-form 3x3 inverse).
  * 7. pulse = W^T * C  (length N).
+ *
+ * Returns a NaN-filled Float32Array if C·C^T is singular (e.g., constant
+ * input). Callers should check `Number.isNaN(pulse[0])` to detect this
+ * failure mode.
  */
 export function pbv(trace: RgbTrace, opts: PbvOptions = {}): Float32Array {
   const { r, g, b } = trace;
@@ -68,6 +72,13 @@ export function pbv(trace: RgbTrace, opts: PbvOptions = {}): Float32Array {
     Qinv[2][0] * pbvSig[0] + Qinv[2][1] * pbvSig[1] + Qinv[2][2] * pbvSig[2],
   ];
 
+  // Singular C·C^T (e.g., constant input) -> propagate NaN so callers see the
+  // failure mode instead of a misleading all-zero pulse that downstream
+  // estimateHr would happily report as a valid-looking BPM.
+  if (Number.isNaN(W[0]) || Number.isNaN(W[1]) || Number.isNaN(W[2])) {
+    return new Float32Array(N).fill(NaN);
+  }
+
   // pulse = W^T * C.
   const pulse = new Float32Array(N);
   for (let n = 0; n < N; n++) {
@@ -81,7 +92,14 @@ function invert3x3(M: number[][]): number[][] {
   const d = M[1][0], e = M[1][1], f = M[1][2];
   const g = M[2][0], h = M[2][1], i = M[2][2];
   const det = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
-  const inv = det !== 0 ? 1 / det : 0;
+  if (Math.abs(det) < 1e-12) {
+    return [
+      [NaN, NaN, NaN],
+      [NaN, NaN, NaN],
+      [NaN, NaN, NaN],
+    ];
+  }
+  const inv = 1 / det;
   return [
     [(e * i - f * h) * inv, (c * h - b * i) * inv, (b * f - c * e) * inv],
     [(f * g - d * i) * inv, (a * i - c * g) * inv, (c * d - a * f) * inv],
