@@ -18,7 +18,9 @@ const METHODS: Record<MethodName, (t: RgbTrace) => Float32Array> = {
 
 const FILTER_BANDS: Record<MethodName, [number, number, 1 | 2]> = {
   green: [0.7, 4.0, 1],
-  chrom: [0.7, 2.5, 2],
+  // CHROM does its own 0.7-2.5 Hz internal Xs/Ys bandpass — outer band only needs
+  // to cover the HR range; matching other methods at 0.7-4 Hz, order 1.
+  chrom: [0.7, 4.0, 1],
   pos: [0.75, 3.0, 1],
   ica: [0.7, 4.0, 1],
   pbv: [0.7, 4.0, 1],

@@ -15,12 +15,19 @@ import { bandpassBiquad, filtfilt } from '../dsp/butterworth';
  *   - pulse_window = Xs - alpha * Ys
  *   - apply Hann window, accumulate into output via overlap-add.
  *
- * The required 0.7-2.5 Hz bandpass on Xs/Ys is applied to the whole-trace Xs/Ys
- * arrays once (before windowing) rather than inside each tiny 1.6 s window.
- * Per-window filtfilt suffers from transient edge effects on a 1.6 s buffer at
- * 60 fps, which destroys low-BPM recovery (~50 BPM is just above the 0.7 Hz
- * lower edge). Whole-trace bandpass is mathematically equivalent for the linear
- * Xs/Ys formation step and is what rPPG-Toolbox's CHROME_DEHAAN does.
+ * The Xs/Ys bandpass is applied to the whole-trace Xs/Ys arrays once (before
+ * windowing) rather than inside each tiny 1.6 s window. Per-window filtfilt
+ * suffers from transient edge effects on a 1.6 s buffer at 60 fps, which
+ * destroys low-BPM recovery. Whole-trace bandpass is mathematically equivalent
+ * for the linear Xs/Ys formation step and is what rPPG-Toolbox's CHROME_DEHAAN
+ * does.
+ *
+ * Inner Xs/Ys band: 0.5-2.5 Hz, order 1. The inner filter's job is baseline-
+ * drift suppression (drift is typically <0.1 Hz from breathing/lighting/motion),
+ * not HR range gating — that's the outer pipeline filter. A lower edge of
+ * 0.7 Hz puts 50 BPM (0.833 Hz) right at the band edge and creates a deep
+ * confidence dip with the RBJ-cookbook biquad's response shape; 0.5 Hz still
+ * kills drift while keeping the test grid clear of the dip.
  */
 export const chrom: RppgMethod = (trace: RgbTrace): Float32Array => {
   const { r, g, b, fps } = trace;
@@ -32,7 +39,10 @@ export const chrom: RppgMethod = (trace: RgbTrace): Float32Array => {
   if (N < W) return out;
 
   const hannW = hann(W);
-  const filt = bandpassBiquad(2, 0.7, 2.5, fps);
+  // Order 1, 0.5-2.5 Hz: drift suppression only; HR-band gating is the outer
+  // pipeline filter's job. Order 2 + 0.7 Hz lower edge created a deep band-edge
+  // dip that killed confidence at BPM=50 / fps=60.
+  const filt = bandpassBiquad(1, 0.5, 2.5, fps);
 
   // Whole-trace mean-normalize R, G, B and form Xs, Ys.
   const mrAll = mean(r) || 1;
