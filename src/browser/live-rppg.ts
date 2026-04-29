@@ -53,8 +53,13 @@ export class LiveRppg {
 
   async start(video: HTMLVideoElement): Promise<void> {
     if (this.started) return;
+    try {
+      await this.tracker.init(this.opts.modelUrl, this.opts.wasmBase);
+    } catch (e) {
+      this.tracker.dispose();
+      throw e;
+    }
     this.started = true;
-    await this.tracker.init(this.opts.modelUrl, this.opts.wasmBase);
     this.capture.start(video, () => this.tracker.detect(video));
     const periodMs = 1000 / this.opts.updateHz;
     this.intervalId = setInterval(() => this.tickPipeline(), periodMs);
