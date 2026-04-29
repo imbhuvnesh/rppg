@@ -65,17 +65,24 @@ export class FaceRoiTracker {
   private bboxHistory: Bbox[] = [];
   private lastRoi: Roi | null = null;
   private lastDetectionMs = 0;
+  private initPromise: Promise<void> | null = null;
 
   /** Lazy-load MediaPipe and the model. */
   async init(modelUrl?: string, wasmBase?: string): Promise<void> {
     if (this.landmarker) return;
-    const vision = await import('@mediapipe/tasks-vision');
-    const fileset = await vision.FilesetResolver.forVisionTasks(wasmBase ?? DEFAULT_WASM_BASE);
-    this.landmarker = (await vision.FaceLandmarker.createFromOptions(fileset, {
-      baseOptions: { modelAssetPath: modelUrl ?? DEFAULT_MODEL_URL },
-      runningMode: 'VIDEO',
-      numFaces: 1,
-    })) as unknown as FaceLandmarkerLike;
+    if (this.initPromise) return this.initPromise;
+    this.initPromise = (async () => {
+      const vision = await import('@mediapipe/tasks-vision');
+      const fileset = await vision.FilesetResolver.forVisionTasks(wasmBase ?? DEFAULT_WASM_BASE);
+      this.landmarker = (await vision.FaceLandmarker.createFromOptions(fileset, {
+        baseOptions: { modelAssetPath: modelUrl ?? DEFAULT_MODEL_URL },
+        runningMode: 'VIDEO',
+        numFaces: 1,
+      })) as unknown as FaceLandmarkerLike;
+    })().finally(() => {
+      this.initPromise = null;
+    });
+    return this.initPromise;
   }
 
   /** Last detected ROI (or last cached one within the reuse window), if any. */
@@ -179,6 +186,7 @@ export class FaceRoiTracker {
     this.lastRoi = null;
     this.maskCanvas = null;
     this.maskCtx = null;
+    this.lastDetectionMs = 0;
   }
 
   private reuseLastIfFresh(): Roi | null {
