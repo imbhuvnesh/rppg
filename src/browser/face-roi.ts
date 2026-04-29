@@ -11,9 +11,12 @@ export type Roi = {
 };
 
 // FaceMesh landmark indices for forehead + cheek polygons.
-const FOREHEAD_IDX = [10, 109, 67, 103, 54, 21, 162, 127, 234];
-const LEFT_CHEEK_IDX = [50, 101, 36, 205, 187, 123, 116];
-const RIGHT_CHEEK_IDX = [280, 330, 266, 425, 411, 352, 345];
+// MediaPipe FaceMesh 478-landmark map: forehead band uses left/right hairline
+// anchors (21, 251) plus a row of forehead landmarks above the eyebrow ridge
+// (54..284). Cheeks are tight cheekbone polygons under each eye.
+const FOREHEAD_IDX = [21, 54, 103, 67, 109, 10, 338, 297, 332, 284, 251];
+const LEFT_CHEEK_IDX = [117, 118, 119, 120, 100, 101, 50];
+const RIGHT_CHEEK_IDX = [346, 347, 348, 349, 329, 330, 280];
 
 const DEFAULT_MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';

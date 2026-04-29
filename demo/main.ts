@@ -36,9 +36,11 @@ function resizeOverlayToVideo() {
 // FaceMesh landmark indices for the ROI polygons drawn on the overlay.
 // Kept in sync with FaceRoiTracker (forehead + cheeks) so the overlay
 // reflects exactly where the rPPG signal is sampled from.
-const FOREHEAD = [10, 109, 67, 103, 54, 21, 162, 127, 234];
-const LEFT_CHEEK = [50, 101, 36, 205, 187, 123, 116];
-const RIGHT_CHEEK = [280, 330, 266, 425, 411, 352, 345];
+const FOREHEAD = [21, 54, 103, 67, 109, 10, 338, 297, 332, 284, 251];
+const LEFT_CHEEK = [117, 118, 119, 120, 100, 101, 50];
+const RIGHT_CHEEK = [346, 347, 348, 349, 329, 330, 280];
+
+const isDebug = new URLSearchParams(location.search).has('debug');
 
 function drawPoly(
   ctx: CanvasRenderingContext2D,
@@ -73,6 +75,31 @@ function drawRoiPolygons(
   drawPoly(ctx, RIGHT_CHEEK, landmarks, W, H);
 }
 
+function drawDebugLandmarks(
+  ctx: CanvasRenderingContext2D,
+  landmarks: { x: number; y: number }[],
+  W: number,
+  H: number
+) {
+  ctx.save();
+  ctx.font = '8px monospace';
+  for (let i = 0; i < landmarks.length; i++) {
+    const lm = landmarks[i];
+    if (!lm) continue;
+    const x = lm.x * W;
+    const y = lm.y * H;
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.beginPath();
+    ctx.arc(x, y, 1, 0, Math.PI * 2);
+    ctx.fill();
+    if (i % 10 === 0) {
+      ctx.fillStyle = 'rgba(255,255,0,0.9)';
+      ctx.fillText(String(i), x + 2, y - 2);
+    }
+  }
+  ctx.restore();
+}
+
 function drawOverlay() {
   const ctx = overlay.getContext('2d');
   if (!ctx) return;
@@ -86,6 +113,7 @@ function drawOverlay() {
       overlay.height = video.videoHeight;
     }
     drawRoiPolygons(ctx, roi.landmarks, overlay.width, overlay.height);
+    if (isDebug) drawDebugLandmarks(ctx, roi.landmarks, overlay.width, overlay.height);
     // Don't override status here — handleResult is the authority for confidence/calibration.
   } else {
     // No face detected — only set this status if not currently showing a more specific message.
