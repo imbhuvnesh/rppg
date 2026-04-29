@@ -115,7 +115,11 @@ function drawOverlay() {
     }
     drawRoiPolygons(ctx, roi.landmarks, overlay.width, overlay.height);
     if (isDebug) drawDebugLandmarks(ctx, roi.landmarks, overlay.width, overlay.height);
-    // Don't override status here — handleResult is the authority for confidence/calibration.
+    // Face is back — clear our own "Looking for face..." latch so handleResult
+    // can take over status text on the next pipeline tick.
+    if (status.textContent === 'Looking for face...') {
+      status.textContent = '';
+    }
   } else {
     // No face detected — only set this status if not currently showing a more specific message.
     if (status.textContent === '' || status.textContent === 'Calibrating...') {
@@ -144,6 +148,8 @@ function start() {
 // string, or a previous handleResult-owned label).
 const HANDLED_STATUS = new Set([
   '',
+  'Looking for face...',
+  'Calibrating...',
   'Low confidence',
   '(weak signal)',
   '(low confidence)',
