@@ -101,6 +101,27 @@ export class LiveRppg {
     return this.tracker.getLastRoi();
   }
 
+  /**
+   * Observed sampling fps from the current capture buffer. Returns 0 when
+   * fewer than 2 samples are buffered. Demo/inspection helper — not part of
+   * any public-API guarantee.
+   */
+  observedFps(): number {
+    const samples = this.capture.getRecent(Math.ceil(this.opts.windowSec * 60));
+    return computeFps(samples);
+  }
+
+  /**
+   * Time span (in seconds) covered by the current capture buffer. Returns 0
+   * when fewer than 2 samples are buffered. Demo/inspection helper — not
+   * part of any public-API guarantee.
+   */
+  bufferSeconds(): number {
+    const samples = this.capture.getRecent(Math.ceil(this.opts.windowSec * 60));
+    if (samples.length < 2) return 0;
+    return (samples[samples.length - 1].t - samples[0].t) / 1000;
+  }
+
   private tickPipeline(): void {
     const desired = Math.ceil(this.opts.windowSec * 60); // generous over-estimate
     const samples = this.capture.getRecent(desired);
@@ -138,8 +159,13 @@ function toRgbTrace(samples: RgbSample[]): RgbTrace {
     g[i] = samples[i].g;
     b[i] = samples[i].b;
   }
-  // Observed fps from timestamps (ms). Matters when frames drop.
+  return { r, g, b, fps: computeFps(samples) };
+}
+
+/** Observed fps from sample timestamps (ms). Returns 0 if < 2 samples. */
+function computeFps(samples: RgbSample[]): number {
+  const N = samples.length;
+  if (N < 2) return 0;
   const dtMs = samples[N - 1].t - samples[0].t;
-  const fps = dtMs > 0 ? ((N - 1) / dtMs) * 1000 : 0;
-  return { r, g, b, fps };
+  return dtMs > 0 ? ((N - 1) / dtMs) * 1000 : 0;
 }

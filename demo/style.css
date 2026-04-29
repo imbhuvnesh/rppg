@@ -64,6 +64,20 @@ html, body {
   pointer-events: none;
 }
 
+.diag {
+  position: absolute;
+  bottom: 8px;
+  right: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.5);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  white-space: pre;
+  text-align: right;
+}
+
 .controls {
   margin-top: 12px;
   display: flex;

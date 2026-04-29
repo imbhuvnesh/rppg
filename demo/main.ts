@@ -8,6 +8,7 @@ const overlay = document.querySelector<HTMLCanvasElement>('#overlay')!;
 const methodSel = document.querySelector<HTMLSelectElement>('#method')!;
 const status = document.querySelector<HTMLDivElement>('#status')!;
 const snrBar = document.querySelector<HTMLDivElement>('#snr-bar')!;
+const diag = document.querySelector<HTMLDivElement>('#diag')!;
 
 let live: LiveRppg | null = null;
 
@@ -137,18 +138,61 @@ function start() {
   });
 }
 
+// Status strings owned by handleResult. The rAF overlay loop sets
+// "Looking for face..." / "Calibrating..." which we must not overwrite —
+// we only mutate status when the current text is one of these (an empty
+// string, or a previous handleResult-owned label).
+const HANDLED_STATUS = new Set([
+  '',
+  'Low confidence',
+  '(weak signal)',
+  '(low confidence)',
+]);
+
 function handleResult(r: RppgResult) {
-  if (r.confidence < 0.3) {
-    status.textContent = 'Low confidence';
+  const inRange = Number.isFinite(r.bpm) && r.bpm >= 40 && r.bpm <= 200;
+
+  if (!inRange) {
     bpmEl.textContent = '--';
     bpmEl.style.opacity = '0.4';
+    if (HANDLED_STATUS.has(status.textContent ?? '')) {
+      status.textContent = 'Low confidence';
+    }
   } else {
-    status.textContent = '';
     bpmEl.textContent = r.bpm.toFixed(0);
-    bpmEl.style.opacity = '1';
+    if (r.confidence >= 0.5) {
+      bpmEl.style.opacity = '1';
+      if (HANDLED_STATUS.has(status.textContent ?? '')) {
+        status.textContent = '';
+      }
+    } else if (r.confidence >= 0.2) {
+      bpmEl.style.opacity = '0.7';
+      if (HANDLED_STATUS.has(status.textContent ?? '')) {
+        status.textContent = '(weak signal)';
+      }
+    } else {
+      bpmEl.style.opacity = '0.4';
+      if (HANDLED_STATUS.has(status.textContent ?? '')) {
+        status.textContent = '(low confidence)';
+      }
+    }
   }
+
   drawWaveform(wave, r.pulseSignal);
   snrBar.style.width = Math.max(0, Math.min(100, r.snr * 10)) + '%';
+
+  const fps = live?.observedFps() ?? 0;
+  const bufSec = live?.bufferSeconds() ?? 0;
+  updateDiag(methodSel.value, r, fps, bufSec);
+}
+
+function updateDiag(method: string, r: RppgResult, observedFps: number, bufferSec: number) {
+  const bpmStr = Number.isFinite(r.bpm) ? r.bpm.toFixed(1) : 'NaN';
+  diag.textContent = [
+    `method: ${method}    fps: ${observedFps.toFixed(1)}`,
+    `buffer: ${bufferSec.toFixed(1)} s   bpm: ${bpmStr}`,
+    `snr: ${r.snr.toFixed(1)} dB    conf: ${r.confidence.toFixed(2)}`,
+  ].join('\n');
 }
 
 function drawWaveform(canvas: HTMLCanvasElement, x: Float32Array) {
