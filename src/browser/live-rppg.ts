@@ -31,7 +31,7 @@ export class LiveRppg {
   };
   private tracker = new FaceRoiTracker();
   private capture: FrameCapture;
-  private intervalId: ReturnType<typeof setInterval> | null = null;
+  private intervalId: ReturnType<typeof setTimeout> | null = null;
   private listeners = new Set<ResultListener>();
   private lastResult: RppgResult | null = null;
   private started = false;
@@ -61,15 +61,22 @@ export class LiveRppg {
     }
     this.started = true;
     this.capture.start(video, () => this.tracker.detect(video));
-    const periodMs = 1000 / this.opts.updateHz;
-    this.intervalId = setInterval(() => this.tickPipeline(), periodMs);
+    const periodMs = Math.max(1, Math.round(1000 / (this.opts.updateHz ?? 1)));
+    const schedule = () => {
+      if (!this.started) return;
+      this.intervalId = setTimeout(() => {
+        this.tickPipeline();
+        schedule();
+      }, periodMs);
+    };
+    schedule();
   }
 
   stop(): void {
     if (!this.started) return;
     this.started = false;
     if (this.intervalId !== null) {
-      clearInterval(this.intervalId);
+      clearTimeout(this.intervalId);
       this.intervalId = null;
     }
     this.capture.stop();
