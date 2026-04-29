@@ -81,6 +81,7 @@ export class LiveRppg {
     }
     this.capture.stop();
     this.tracker.dispose();
+    this.lastResult = null;
   }
 
   onUpdate(cb: ResultListener): () => void {
