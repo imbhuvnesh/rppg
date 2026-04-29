@@ -86,6 +86,12 @@ function drawOverlay() {
       overlay.height = video.videoHeight;
     }
     drawRoiPolygons(ctx, roi.landmarks, overlay.width, overlay.height);
+    // Don't override status here — handleResult is the authority for confidence/calibration.
+  } else {
+    // No face detected — only set this status if not currently showing a more specific message.
+    if (status.textContent === '' || status.textContent === 'Calibrating...') {
+      status.textContent = 'Looking for face...';
+    }
   }
   requestAnimationFrame(drawOverlay);
 }
